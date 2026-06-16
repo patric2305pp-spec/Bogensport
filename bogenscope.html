@@ -7,142 +7,188 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>BogenScope</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  :root { --accent:#C9FF3D; }
-  body { background:#000; width:100vw; height:100dvh; overflow:hidden; font-family:monospace; touch-action:none; user-select:none; }
-  #video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
-  #canvas { position:fixed; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; }
-  #vignette { position:fixed; inset:0; z-index:3; pointer-events:none;
-    background:radial-gradient(circle at 50% 42%, transparent 32%, rgba(0,0,0,0.80) 62%); }
-  #ui { position:fixed; inset:0; z-index:4; display:none; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root { --accent:#C9FF3D; --bg:#1a1a1a; --panel:rgba(0,0,0,0.55); --border:rgba(255,255,255,0.14); }
+body { background:#000; width:100vw; height:100dvh; overflow:hidden; font-family:monospace; touch-action:none; user-select:none; }
 
-  /* Start */
-  #startScreen { position:fixed; inset:0; z-index:10; background:#000;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
-  #startScreen h1 { color:var(--accent); font-size:2.4rem; letter-spacing:.08em; }
-  #startScreen p { color:rgba(255,255,255,.55); font-size:.85rem; text-align:center; padding:0 32px; line-height:1.6; }
-  #startBtn { background:var(--accent); color:#000; border:none; border-radius:14px;
-    padding:16px 40px; font-size:1.1rem; font-weight:700; cursor:pointer; }
+/* ── Video & Canvas ── */
+#video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+#canvas { position:fixed; inset:0; width:100%; height:100%; z-index:2; }
+#vignette { position:fixed; inset:0; z-index:3; pointer-events:none;
+  background:radial-gradient(circle at 50% 42%, transparent 32%, rgba(0,0,0,0.82) 62%); }
+#ui { position:fixed; inset:0; z-index:4; display:none; pointer-events:none; }
+#ui > * { pointer-events:auto; }
 
-  /* Level */
-  #levelWrap { position:absolute; top:52px; left:50%; transform:translateX(-50%);
-    display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; }
-  #levelTrack { position:relative; width:140px; height:18px; background:rgba(0,0,0,.5);
-    border-radius:9px; border:1px solid rgba(255,255,255,.22); }
-  #levelCenter { position:absolute; left:50%; top:0; bottom:0; width:1.5px;
-    background:rgba(255,255,255,.4); transform:translateX(-50%); }
-  #levelBubble { position:absolute; top:3px; width:12px; height:12px; border-radius:50%;
-    background:#3DDC84; transition:left .12s, background .2s; transform:translateX(-50%); left:50%; }
-  #levelVal { font-size:10px; color:#3DDC84; transition:color .2s; }
+/* ── Start ── */
+#startScreen { position:fixed; inset:0; z-index:10; background:#000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
+#startScreen h1 { color:var(--accent); font-size:2.6rem; letter-spacing:.1em; }
+#startScreen p { color:rgba(255,255,255,.5); font-size:.85rem; text-align:center; padding:0 36px; line-height:1.7; }
+#startBtn { background:var(--accent); color:#000; border:none; border-radius:14px;
+  padding:16px 44px; font-size:1.1rem; font-weight:700; cursor:pointer; letter-spacing:.04em; }
 
-  /* Distance HUD */
-  #distHud { position:absolute; top:48px; right:12px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-  #distBox { background:rgba(0,0,0,.52); border-radius:10px; border:1.5px solid rgba(255,255,255,.14);
-    padding:7px 13px; display:flex; align-items:baseline; gap:4px; cursor:pointer; }
-  #distVal { font-size:28px; font-weight:700; color:var(--accent); }
-  #distUnit { font-size:12px; color:rgba(255,255,255,.55); }
-  #windBox { background:rgba(0,0,0,.42); border-radius:8px; border:1px solid rgba(255,255,255,.1);
-    padding:4px 10px; font-size:11px; color:rgba(255,255,255,.6); }
+/* ── Error ── */
+#errScreen { position:fixed; inset:0; z-index:9; background:#000; display:none;
+  flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:32px; text-align:center; }
+#errScreen.show { display:flex; }
+#errScreen p { color:rgba(255,255,255,.7); line-height:1.6; font-family:sans-serif; font-size:14px; }
+#retryBtn { background:var(--accent); color:#000; border:none; border-radius:12px; padding:14px 32px; font-size:1rem; font-weight:700; cursor:pointer; }
 
-  /* Profile */
-  #profileBtn { position:absolute; top:48px; left:12px; background:rgba(0,0,0,.52);
-    border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:8px 12px;
-    color:#fff; font-size:12px; cursor:pointer; }
+/* ── Level ── */
+#levelWrap { position:absolute; top:52px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; }
+#levelTrack { position:relative; width:140px; height:18px; background:rgba(0,0,0,.5);
+  border-radius:9px; border:1px solid rgba(255,255,255,.22); }
+#levelCenter { position:absolute; left:50%; top:0; bottom:0; width:1.5px; background:rgba(255,255,255,.4); transform:translateX(-50%); }
+#levelBubble { position:absolute; top:3px; width:12px; height:12px; border-radius:50%;
+  background:#3DDC84; transition:left .12s, background .2s; transform:translateX(-50%); left:50%; }
+#levelVal { font-size:10px; color:#3DDC84; transition:color .2s; }
 
-  /* Mini */
-  #miniWrap { position:absolute; right:12px; bottom:92px; width:90px; height:90px;
-    border-radius:10px; overflow:hidden; border:2px solid rgba(255,255,255,.35);
-    box-shadow:0 2px 12px rgba(0,0,0,.6); }
-  #miniVideo { width:100%; height:100%; object-fit:cover; transform:scale(3); transform-origin:center; }
-  #miniCanvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-  #miniLabel { position:absolute; top:3px; left:4px; font-size:9px;
-    background:rgba(0,0,0,.55); color:rgba(255,255,255,.7); padding:1px 4px; border-radius:3px; }
+/* ── Distance HUD ── */
+#distHud { position:absolute; top:48px; right:12px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+#distBox { background:var(--panel); border-radius:10px; border:1.5px solid var(--border);
+  padding:7px 13px; display:flex; align-items:baseline; gap:4px; cursor:pointer; }
+#distVal { font-size:28px; font-weight:700; color:var(--accent); }
+#distUnit { font-size:12px; color:rgba(255,255,255,.55); }
+#windBox { background:rgba(0,0,0,.42); border-radius:8px; border:1px solid rgba(255,255,255,.1);
+  padding:4px 10px; font-size:11px; color:rgba(255,255,255,.6); }
 
-  /* Zoom */
-  #zoomCtrl { position:absolute; left:10px; top:50%; transform:translateY(-50%);
-    background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.1);
-    border-radius:16px; padding:10px 6px;
-    display:flex; flex-direction:column; align-items:center; gap:6px; }
-  #zoomCtrl button { width:36px; height:36px; border-radius:8px;
-    background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22);
-    color:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  #zoomSlider { writing-mode:vertical-lr; direction:rtl; -webkit-appearance:slider-vertical;
-    width:28px; height:120px; accent-color:var(--accent); cursor:pointer; touch-action:none; }
-  #zoomVal { font-size:11px; color:var(--accent); font-weight:700; }
+/* ── Profile btn ── */
+#profileBtn { position:absolute; top:48px; left:12px; background:var(--panel);
+  border:1px solid var(--border); border-radius:10px; padding:8px 12px;
+  color:#fff; font-size:12px; cursor:pointer; }
 
-  /* Einschießen banner */
-  #shootBanner { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(0,0,0,.75); border:2px solid var(--accent); border-radius:16px;
-    padding:16px 24px; text-align:center; display:none; pointer-events:none; }
-  #shootBanner p { color:#fff; font-size:13px; font-family:sans-serif; }
-  #shootBanner span { color:var(--accent); font-weight:700; font-size:16px; }
+/* ── Mini view ── */
+#miniWrap { position:absolute; right:12px; bottom:92px; width:90px; height:90px;
+  border-radius:10px; overflow:hidden; border:2px solid rgba(255,255,255,.35);
+  box-shadow:0 2px 12px rgba(0,0,0,.6); }
+#miniVideo { width:100%; height:100%; object-fit:cover; transform:scale(3); transform-origin:center; }
+#miniCanvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+#miniLabel { position:absolute; top:3px; left:4px; font-size:9px;
+  background:rgba(0,0,0,.55); color:rgba(255,255,255,.7); padding:1px 4px; border-radius:3px; }
 
-  /* Toggle bar */
-  #toggleBar { position:absolute; bottom:0; left:0; right:0;
-    background:linear-gradient(to top, rgba(0,0,0,.78), transparent);
-    padding:10px 6px 20px; display:flex; justify-content:space-around; gap:4px; }
-  .tog { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    width:44px; height:50px; border-radius:10px; border:1.5px solid rgba(255,255,255,.15);
-    background:rgba(0,0,0,.45); color:rgba(255,255,255,.75); cursor:pointer;
-    font-size:8px; transition:background .15s, border-color .15s; }
-  .tog .icon { font-size:16px; line-height:1; }
-  .tog.on { background:var(--accent); border-color:var(--accent); color:#000; }
-  .tog.pulse { animation:pulse .3s ease; }
-  @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
+/* ── Zoom ── */
+#zoomCtrl { position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.1);
+  border-radius:16px; padding:10px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:6px; }
+#zoomCtrl button { width:36px; height:36px; border-radius:8px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22);
+  color:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#zoomSlider { writing-mode:vertical-lr; direction:rtl; -webkit-appearance:slider-vertical;
+  width:28px; height:110px; accent-color:var(--accent); cursor:pointer; }
+#zoomVal { font-size:11px; color:var(--accent); font-weight:700; }
 
-  /* Shoot button */
-  #shootBtn { position:absolute; bottom:78px; left:50%; transform:translateX(-50%);
-    background:rgba(201,255,61,.15); border:2px solid var(--accent); border-radius:50%;
-    width:54px; height:54px; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; cursor:pointer; font-size:8px; color:var(--accent); gap:2px; }
-  #shootBtn .icon { font-size:20px; }
+/* ── Calibration overlay ── */
+#calibOverlay { position:fixed; inset:0; z-index:15; background:rgba(0,0,0,.88);
+  display:none; flex-direction:column; align-items:center; justify-content:flex-start;
+  padding:0; overflow:hidden; }
+#calibOverlay.open { display:flex; }
+#calibHeader { width:100%; background:#111; padding:16px 20px 12px;
+  border-bottom:1px solid rgba(255,255,255,.08); }
+#calibHeader h2 { color:var(--accent); font-size:1.1rem; font-family:sans-serif; }
+#calibHeader p  { color:rgba(255,255,255,.55); font-size:.75rem; margin-top:4px; font-family:sans-serif; line-height:1.5; }
+#calibBody { flex:1; width:100%; overflow-y:auto; padding:16px; }
+#calibFooter { width:100%; padding:12px 16px 28px; background:#111;
+  border-top:1px solid rgba(255,255,255,.08); }
 
-  /* Sheet */
-  #sheet { position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.65); display:none; align-items:flex-end; }
-  #sheet.open { display:flex; }
-  #sheetBox { width:100%; max-height:82dvh; overflow-y:auto;
-    background:#1a1a1a; border-radius:20px 20px 0 0; padding:16px 16px 36px;
-    border:1px solid rgba(255,255,255,.08); }
-  #sheetBox h2 { color:#fff; font-size:15px; font-weight:600; margin-bottom:12px; font-family:sans-serif; }
-  .sheetClose { float:right; background:none; border:none; color:rgba(255,255,255,.55); font-size:22px; cursor:pointer; }
-  .sheetRow { display:flex; justify-content:space-between; align-items:center;
-    background:#262626; border-radius:12px; padding:13px 14px; margin-bottom:6px; cursor:pointer; }
-  .sheetRow span { color:#fff; font-size:14px; font-family:sans-serif; }
-  .sw { width:44px; height:24px; border-radius:12px; background:#555; position:relative; transition:background .2s; flex-shrink:0; }
-  .sw.on { background:var(--accent); }
-  .sw::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px;
-    border-radius:50%; background:#fff; transition:left .2s; }
-  .sw.on::after { left:22px; }
-  .pinRow { display:flex; align-items:center; gap:12px; background:#262626;
-    border-radius:12px; padding:13px 14px; margin-bottom:6px;
-    border:1.5px solid transparent; }
-  .pinRow.active { border-color:var(--accent); }
-  .pinDot { width:16px; height:16px; border-radius:50%; flex-shrink:0; }
-  .pinLabel { color:#fff; font-family:monospace; font-size:14px; flex:1; }
-  .pinActive { color:var(--accent); font-size:10px; font-weight:700; }
-  .pinOffset { color:rgba(255,255,255,.4); font-size:10px; font-family:monospace; }
-  .pinSelectBtn { color:rgba(255,255,255,.7); font-size:13px; cursor:pointer; padding:4px 8px;
-    border:1px solid rgba(255,255,255,.2); border-radius:6px; background:none; font-family:sans-serif; }
-  .pinSelectBtn.act { background:var(--accent); color:#000; border-color:var(--accent); }
-  .addBtn { width:100%; padding:13px; border-radius:12px; margin-top:4px;
-    background:#262626; border:1px dashed rgba(255,255,255,.22);
-    color:rgba(255,255,255,.65); font-size:13px; cursor:pointer; font-family:sans-serif; }
-  .sectionTitle { color:rgba(255,255,255,.4); font-size:11px; margin:12px 0 6px; font-family:sans-serif; }
+/* Distance selector */
+.distGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
+.distBtn { padding:14px 0; border-radius:12px; border:1.5px solid rgba(255,255,255,.18);
+  background:#262626; color:#fff; font-size:15px; font-family:monospace; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:3px; }
+.distBtn .dsub { font-size:9px; color:rgba(255,255,255,.4); }
+.distBtn.calibrated { border-color:#3DDC84; }
+.distBtn.calibrated .dsub { color:#3DDC84; }
+.distBtn.active { background:var(--accent); color:#000; border-color:var(--accent); }
+.distBtn.active .dsub { color:rgba(0,0,0,.6); }
 
-  /* Error */
-  #errScreen { position:fixed; inset:0; z-index:9; background:#000; display:none;
-    flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:32px; text-align:center; }
-  #errScreen.show { display:flex; }
-  #errScreen p { color:rgba(255,255,255,.7); line-height:1.6; font-family:sans-serif; font-size:14px; }
-  #retryBtn { background:var(--accent); color:#000; border:none; border-radius:12px;
-    padding:14px 32px; font-size:1rem; font-weight:700; cursor:pointer; }
+/* Hit list */
+#hitList { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; min-height:32px; }
+.hitBadge { background:#262626; border:1px solid rgba(255,255,255,.15); border-radius:8px;
+  padding:4px 10px; font-size:11px; color:rgba(255,255,255,.7); font-family:monospace; }
+.hitBadge.last { border-color:var(--accent); color:var(--accent); }
+
+/* Calib status */
+#calibStatus { font-size:13px; color:rgba(255,255,255,.7); font-family:sans-serif;
+  line-height:1.6; margin-bottom:12px; }
+#calibStatus .hi { color:var(--accent); font-weight:700; }
+#calibProgress { width:100%; height:6px; background:rgba(255,255,255,.1); border-radius:3px; margin-bottom:16px; overflow:hidden; }
+#calibProgressBar { height:100%; background:var(--accent); border-radius:3px; transition:width .3s; width:0%; }
+
+/* Calib buttons */
+.calibBtn { width:100%; padding:15px; border-radius:14px; font-size:15px; font-family:sans-serif; font-weight:600; cursor:pointer; margin-bottom:8px; border:none; }
+.calibBtn.primary { background:var(--accent); color:#000; }
+.calibBtn.secondary { background:#262626; color:rgba(255,255,255,.8); border:1px solid rgba(255,255,255,.15); }
+.calibBtn.danger { background:rgba(255,60,60,.15); color:#ff6060; border:1px solid rgba(255,60,60,.3); }
+.calibBtn:disabled { opacity:.35; pointer-events:none; }
+
+/* Shoot mode banner */
+#shootBanner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:14; background:rgba(0,0,0,.82); border:2px solid var(--accent); border-radius:18px;
+  padding:20px 28px; text-align:center; display:none; pointer-events:none; max-width:80vw; }
+#shootBanner h3 { color:var(--accent); font-size:1.1rem; margin-bottom:6px; font-family:sans-serif; }
+#shootBanner p  { color:rgba(255,255,255,.7); font-size:.8rem; font-family:sans-serif; line-height:1.5; }
+#shootBanner .hitCount { font-size:2rem; font-weight:700; color:#fff; margin:8px 0; }
+
+/* Tap-to-hit instruction */
+#tapHint { position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  z-index:14; background:rgba(0,0,0,.7); border:1px solid rgba(255,255,255,.2);
+  border-radius:10px; padding:8px 18px; font-size:12px; color:rgba(255,255,255,.8);
+  display:none; pointer-events:none; font-family:sans-serif; white-space:nowrap; }
+
+/* Toggle bar */
+#toggleBar { position:absolute; bottom:0; left:0; right:0;
+  background:linear-gradient(to top, rgba(0,0,0,.8), transparent);
+  padding:10px 6px 20px; display:flex; justify-content:space-around; gap:3px; }
+.tog { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  width:44px; height:50px; border-radius:10px; border:1.5px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.45); color:rgba(255,255,255,.75); cursor:pointer;
+  font-size:8px; transition:all .15s; }
+.tog .icon { font-size:16px; line-height:1; }
+.tog.on { background:var(--accent); border-color:var(--accent); color:#000; }
+
+/* Calib trigger btn */
+#calibTrigger { position:absolute; bottom:78px; left:50%; transform:translateX(-50%);
+  background:rgba(201,255,61,.12); border:2px solid var(--accent); border-radius:50%;
+  width:56px; height:56px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; cursor:pointer; gap:2px; }
+#calibTrigger .icon { font-size:22px; }
+#calibTrigger .lbl { font-size:8px; color:var(--accent); }
+
+/* Sheet */
+#sheet { position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.65); display:none; align-items:flex-end; }
+#sheet.open { display:flex; }
+#sheetBox { width:100%; max-height:80dvh; overflow-y:auto; background:#1a1a1a;
+  border-radius:20px 20px 0 0; padding:16px 16px 36px; border:1px solid rgba(255,255,255,.08); }
+#sheetBox h2 { color:#fff; font-size:15px; font-weight:600; margin-bottom:12px; font-family:sans-serif; }
+.sheetClose { float:right; background:none; border:none; color:rgba(255,255,255,.55); font-size:22px; cursor:pointer; }
+.sheetRow { display:flex; justify-content:space-between; align-items:center;
+  background:#262626; border-radius:12px; padding:13px 14px; margin-bottom:6px; cursor:pointer; }
+.sheetRow span { color:#fff; font-size:14px; font-family:sans-serif; }
+.sw { width:44px; height:24px; border-radius:12px; background:#555; position:relative; transition:background .2s; flex-shrink:0; }
+.sw.on { background:var(--accent); }
+.sw::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .2s; }
+.sw.on::after { left:22px; }
+.pinRow { display:flex; align-items:center; gap:10px; background:#262626; border-radius:12px;
+  padding:12px 14px; margin-bottom:6px; border:1.5px solid transparent; }
+.pinRow.active { border-color:var(--accent); }
+.pinDot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.pinLabel { color:#fff; font-family:monospace; font-size:14px; flex:1; }
+.pinState { font-size:10px; font-family:monospace; }
+.pinState.ok { color:#3DDC84; }
+.pinState.no { color:rgba(255,255,255,.3); }
+.pinSelectBtn { color:rgba(255,255,255,.7); font-size:12px; cursor:pointer; padding:4px 10px;
+  border:1px solid rgba(255,255,255,.2); border-radius:6px; background:none; font-family:sans-serif; }
+.pinSelectBtn.act { background:var(--accent); color:#000; border-color:var(--accent); }
 </style>
 </head>
 <body>
 
+<!-- Start -->
 <div id="startScreen">
   <h1>BOGENSCOPE</h1>
-  <p>Digitales Visier für Compound- und Recurvebögen.<br>Benötigt Kamerazugriff.</p>
+  <p>Digitales Visier für Bogen.<br>Benötigt Kamerazugriff.</p>
   <button id="startBtn">Kamera starten</button>
 </div>
 
@@ -151,10 +197,20 @@
   <button id="retryBtn">Erneut versuchen</button>
 </div>
 
+<!-- Camera -->
 <video id="video" autoplay playsinline muted></video>
 <canvas id="canvas"></canvas>
 <div id="vignette"></div>
 
+<!-- Shoot mode overlays -->
+<div id="shootBanner">
+  <h3 id="shootBannerTitle">Einschießen</h3>
+  <div class="hitCount" id="hitCountDisplay">0 / 5</div>
+  <p id="shootBannerSub">Tippe ins Scope-Bild wo dein Treffer war</p>
+</div>
+<div id="tapHint">👆 Tippe auf deine Trefferposition im Bild</div>
+
+<!-- Main UI -->
 <div id="ui">
   <div id="levelWrap">
     <div id="levelTrack">
@@ -166,7 +222,7 @@
 
   <div id="distHud">
     <div id="distBox" onclick="openSheet('pins')">
-      <span id="distVal">30</span>
+      <span id="distVal">–</span>
       <span id="distUnit">m</span>
     </div>
     <div id="windBox">💨 3 m/s NW</div>
@@ -182,33 +238,44 @@
 
   <div id="zoomCtrl">
     <button onclick="changeZoom(1)">+</button>
-    <input id="zoomSlider" type="range" min="1" max="20" step="0.5" value="1" oninput="applyZoom(parseFloat(this.value))">
+    <input id="zoomSlider" type="range" min="1" max="20" step="0.5" value="1"
+           oninput="applyZoom(parseFloat(this.value))">
     <button onclick="changeZoom(-1)">−</button>
     <div id="zoomVal">1x</div>
   </div>
 
-  <!-- Einschießen Button -->
-  <div id="shootBtn" onclick="startShoot()">
+  <!-- Einschießen trigger -->
+  <div id="calibTrigger" onclick="openCalib()">
     <span class="icon">🎯</span>
-    <span>Einsch.</span>
-  </div>
-
-  <div id="shootBanner">
-    <p>Ziele auf <span id="shootDist">30</span> m</p>
-    <p style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Tippe auf den Pin um zu speichern</p>
+    <span class="lbl">Einsch.</span>
   </div>
 
   <div id="toggleBar">
-    <div class="tog on"  id="tog-cross"  onclick="tog('cross')" ><span class="icon">✛</span>Kreuz</div>
-    <div class="tog on"  id="tog-circle" onclick="tog('circle')"><span class="icon">○</span>Kreis</div>
-    <div class="tog on"  id="tog-point"  onclick="tog('point')" ><span class="icon">◎</span>Punkt</div>
-    <div class="tog on"  id="tog-pins"   onclick="tog('pins')"  ><span class="icon">📍</span>Pins</div>
-    <div class="tog on"  id="tog-level"  onclick="tog('level')" ><span class="icon">⊟</span>Level</div>
-    <div class="tog on"  id="tog-mini"   onclick="tog('mini')"  ><span class="icon">▣</span>Mini</div>
-    <div class="tog on"  id="tog-dist"   onclick="tog('dist')"  ><span class="icon">m</span>Dist</div>
+    <div class="tog on" id="tog-cross"  onclick="tog('cross')" ><span class="icon">✛</span>Kreuz</div>
+    <div class="tog on" id="tog-circle" onclick="tog('circle')"><span class="icon">○</span>Kreis</div>
+    <div class="tog on" id="tog-point"  onclick="tog('point')" ><span class="icon">◎</span>Punkt</div>
+    <div class="tog on" id="tog-pins"   onclick="tog('pins')"  ><span class="icon">📍</span>Pins</div>
+    <div class="tog on" id="tog-level"  onclick="tog('level')" ><span class="icon">⊟</span>Level</div>
+    <div class="tog on" id="tog-mini"   onclick="tog('mini')"  ><span class="icon">▣</span>Mini</div>
+    <div class="tog on" id="tog-dist"   onclick="tog('dist')"  ><span class="icon">m</span>Dist</div>
   </div>
 </div>
 
+<!-- Calibration panel -->
+<div id="calibOverlay">
+  <div id="calibHeader">
+    <h2>🎯 Einschießen</h2>
+    <p id="calibHeaderSub">Wähle eine Distanz, schieße 5 Mal, bestätige die Pin-Position.</p>
+  </div>
+  <div id="calibBody">
+    <div id="calibBody2"></div>
+  </div>
+  <div id="calibFooter">
+    <button class="calibBtn secondary" onclick="closeCalib()">✕ Schließen</button>
+  </div>
+</div>
+
+<!-- Sheet -->
 <div id="sheet" onclick="closeSheet()">
   <div id="sheetBox" onclick="event.stopPropagation()">
     <div id="sheetContent"></div>
@@ -216,60 +283,53 @@
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const DISTANCES = [10, 20, 30, 40, 50, 60];
+const COLORS    = { 10:'#FF4136', 20:'#FF8C00', 30:'#FFD60A', 40:'#2ECC71', 50:'#2E86FF', 60:'#B14EFF' };
+const HIT_TARGET = 5;
+
+// pinMap: { [distance]: { x: normalised 0-1, y: normalised 0-1 } }
+// Stored as normalised coords so they survive resize
+let pinMap = {};
+
+// Calibration state
+let calib = {
+  active: false,
+  distance: null,
+  hits: [],         // [{x,y}] normalised
+  shooting: false,
+};
+
+// UI toggles
 const S = {
   cross:true, circle:true, point:true, pins:true, level:true, mini:true, dist:true,
   zoom: 1,
   tilt: 0,
-  activePin: 30,
-  shootMode: false,   // Einschießen aktiv?
-  shootingPin: null,  // welcher Pin wird gerade eingeschossen?
+  activePin: null,
 };
 
-// Pins: oy = vertikaler Offset in Prozent der Canvas-Höhe, relativ zu Bildmitte
-// Gespeichert PER ZOOM-STUFE: offsets[distance][zoom] = oy
-const PINS = [
-  { d:10, color:'#FF4136' },
-  { d:20, color:'#FF8C00' },
-  { d:30, color:'#FFD60A' },
-  { d:40, color:'#2ECC71' },
-  { d:50, color:'#2E86FF' },
-  { d:60, color:'#B14EFF' },
-];
+// Load saved pins
+try {
+  const saved = localStorage.getItem('bogenscope_pins');
+  if (saved) pinMap = JSON.parse(saved);
+  // Set activePin to first calibrated distance
+  const first = DISTANCES.find(d => pinMap[d]);
+  if (first) S.activePin = first;
+} catch(e) {}
 
-// Offset-Speicher: pro Pin, pro Zoom-Stufe (gerundet auf 0.5x)
-// Default: lineare Verteilung
-const pinOffsets = {};
-PINS.forEach((p, i) => {
-  pinOffsets[p.d] = {};
-  // Default-Offsets für alle Zoom-Stufen gleich (werden beim Einschießen überschrieben)
-  const defaultOy = 0.14 - i * 0.055;
-  for (let z = 1; z <= 20; z += 0.5) {
-    pinOffsets[p.d][z] = defaultOy;
-  }
-});
-
-function getPinOffset(dist, zoom) {
-  const z = roundZoom(zoom);
-  if (pinOffsets[dist] && pinOffsets[dist][z] !== undefined) return pinOffsets[dist][z];
-  return 0;
+function savePins() {
+  try { localStorage.setItem('bogenscope_pins', JSON.stringify(pinMap)); } catch(e) {}
 }
 
-function setPinOffset(dist, zoom, oy) {
-  const z = roundZoom(zoom);
-  if (!pinOffsets[dist]) pinOffsets[dist] = {};
-  pinOffsets[dist][z] = oy;
-}
-
-function roundZoom(z) {
-  return Math.round(z * 2) / 2; // nearest 0.5
-}
-
-// ── Camera ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════════════
 let stream = null, track = null, maxZoom = 20;
 
 document.getElementById('startBtn').onclick = startCamera;
-document.getElementById('retryBtn').onclick = () => {
+document.getElementById('retryBtn').onclick  = () => {
   document.getElementById('errScreen').classList.remove('show');
   startCamera();
 };
@@ -282,16 +342,13 @@ async function startCamera() {
       audio: false
     });
     const v = document.getElementById('video');
-    v.srcObject = stream;
-    await v.play();
+    v.srcObject = stream; await v.play();
     const mv = document.getElementById('miniVideo');
-    mv.srcObject = stream;
-    await mv.play();
+    mv.srcObject = stream; await mv.play();
     track = stream.getVideoTracks()[0];
-    // Get max zoom
     try {
       const caps = track.getCapabilities();
-      if (caps.zoom) maxZoom = Math.min(caps.zoom.max, 20);
+      if (caps.zoom) { maxZoom = Math.min(caps.zoom.max, 20); }
     } catch(_) {}
     document.getElementById('zoomSlider').max = maxZoom;
     document.getElementById('ui').style.display = 'block';
@@ -299,21 +356,20 @@ async function startCamera() {
     requestAnimationFrame(drawLoop);
     initSensors();
     initPinchZoom();
-    initPinDrag();
+    initCanvasTap();
   } catch(e) {
-    document.getElementById('errMsg').textContent =
-      'Kamerazugriff nicht möglich: ' + e.message;
+    document.getElementById('errMsg').textContent = 'Kamerazugriff nicht möglich: ' + e.message;
     document.getElementById('errScreen').classList.add('show');
   }
 }
 
-// ── Zoom ───────────────────────────────────────────────────────────────
-function changeZoom(d) {
-  applyZoom(Math.max(1, Math.min(maxZoom, S.zoom + d)));
-}
+// ═══════════════════════════════════════════════════════════════
+// ZOOM
+// ═══════════════════════════════════════════════════════════════
+function changeZoom(d) { applyZoom(Math.max(1, Math.min(maxZoom, S.zoom + d))); }
 
 async function applyZoom(z) {
-  z = Math.max(1, Math.min(maxZoom, z));
+  z = Math.max(1, Math.min(maxZoom, parseFloat(z.toFixed(1))));
   S.zoom = z;
   document.getElementById('zoomSlider').value = z;
   document.getElementById('zoomVal').textContent = z.toFixed(1) + 'x';
@@ -324,74 +380,62 @@ async function applyZoom(z) {
   } catch(_) {}
 }
 
-// Pinch-to-zoom
 function initPinchZoom() {
-  const el = document.getElementById('canvas');
   let startDist = 0, startZoom = 1;
-
   document.addEventListener('touchstart', e => {
     if (e.touches.length === 2) {
-      startDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
+      startDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
       startZoom = S.zoom;
     }
-  }, { passive:true });
-
+  }, {passive:true});
   document.addEventListener('touchmove', e => {
-    if (e.touches.length === 2) {
-      const d = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const ratio = d / startDist;
-      applyZoom(Math.round(startZoom * ratio * 2) / 2);
-    }
-  }, { passive:true });
+    if (e.touches.length !== 2 || calib.active) return;
+    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    applyZoom(Math.round(startZoom * (d/startDist) * 2)/2);
+  }, {passive:true});
 }
 
-// ── Canvas ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// CANVAS & DRAW
+// ═══════════════════════════════════════════════════════════════
 function resizeCanvas() {
-  ['canvas','miniCanvas'].forEach(id => {
-    const c = document.getElementById(id);
-    if (id === 'canvas') { c.width = window.innerWidth; c.height = window.innerHeight; }
-    else { c.width = c.offsetWidth; c.height = c.offsetHeight; }
-  });
+  const c = document.getElementById('canvas');
+  c.width = window.innerWidth; c.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 
 function drawLoop() {
   requestAnimationFrame(drawLoop);
-  const c = document.getElementById('canvas');
+  const c   = document.getElementById('canvas');
   const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.clearRect(0,0,c.width,c.height);
 
-  const cx = c.width / 2;
-  const cy = c.height * 0.42;
-  const r  = Math.min(cx * 0.88, cy * 0.88);
+  const cx = c.width/2, cy = c.height*0.42;
+  const r  = Math.min(cx*0.88, cy*0.88);
+
+  // In shoot mode – don't draw scope overlays, just hit markers
+  if (calib.shooting) {
+    drawHitMarkers(ctx, c.width, c.height);
+    drawMini();
+    return;
+  }
 
   // Scope circle
   if (S.circle) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(201,255,61,.88)';
-    ctx.lineWidth = 1.8;
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(201,255,61,.88)'; ctx.lineWidth=1.8; ctx.stroke();
   }
 
   // Crosshair
   if (S.cross) {
-    ctx.strokeStyle = 'rgba(201,255,61,.88)';
-    ctx.lineWidth = 1.5;
-    const gap = 20;
-    [[cx-r,cy,cx-gap,cy],[cx+gap,cy,cx+r,cy],[cx,cy-r,cx,cy-gap],[cx,cy+gap,cx,cy+r]].forEach(([x1,y1,x2,y2])=>{
+    ctx.strokeStyle='rgba(201,255,61,.88)'; ctx.lineWidth=1.5;
+    const g=20;
+    [[cx-r,cy,cx-g,cy],[cx+g,cy,cx+r,cy],[cx,cy-r,cx,cy-g],[cx,cy+g,cx,cy+r]].forEach(([x1,y1,x2,y2])=>{
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
     });
-    ctx.strokeStyle = 'rgba(201,255,61,.5)';
-    ctx.lineWidth = 1.2;
-    [.3,.55,.75,.9].forEach(f => {
-      [cx+r*f, cx-r*f].forEach(x => {
+    ctx.strokeStyle='rgba(201,255,61,.5)'; ctx.lineWidth=1.1;
+    [.3,.55,.75,.9].forEach(f=>{
+      [cx+r*f,cx-r*f].forEach(x=>{
         ctx.beginPath(); ctx.moveTo(x,cy-5); ctx.lineTo(x,cy+5); ctx.stroke();
       });
     });
@@ -399,72 +443,314 @@ function drawLoop() {
 
   // Aim point
   if (S.point) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, 4.5, 0, Math.PI*2);
-    ctx.fillStyle = '#C9FF3D';
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,4.5,0,Math.PI*2);
+    ctx.fillStyle='#C9FF3D'; ctx.fill();
   }
 
-  // Pins – position depends on current zoom
+  // Pins – fixed normalised image coords, independent of zoom
   if (S.pins) {
-    PINS.forEach(pin => {
-      const oy  = getPinOffset(pin.d, S.zoom);
-      const px  = cx;
-      const py  = cy + oy * c.height;
-      const isA = pin.d === S.activePin;
-      const isS = S.shootMode && S.shootingPin === pin.d;
+    DISTANCES.forEach(d => {
+      if (!pinMap[d]) return;
+      const px = pinMap[d].x * c.width;
+      const py = pinMap[d].y * c.height;
+      const col = COLORS[d];
+      const isA = S.activePin === d;
 
-      // Glow when shooting this pin
-      if (isS) {
-        ctx.beginPath();
-        ctx.arc(px, py, 18, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(201,255,61,.15)';
-        ctx.fill();
+      ctx.beginPath(); ctx.arc(px,py,isA?7:5,0,Math.PI*2);
+      ctx.fillStyle=col; ctx.fill();
+
+      if (isA) {
+        ctx.beginPath(); ctx.arc(px,py,10,0,Math.PI*2);
+        ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=2; ctx.stroke();
       }
 
-      ctx.beginPath();
-      ctx.arc(px, py, isA ? 7 : 4.5, 0, Math.PI*2);
-      ctx.fillStyle = pin.color;
-      ctx.fill();
-
-      if (isA || isS) {
-        ctx.beginPath();
-        ctx.arc(px, py, 10, 0, Math.PI*2);
-        ctx.strokeStyle = isS ? '#C9FF3D' : 'rgba(255,255,255,.9)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-
-      // Label
-      ctx.font = `${isA?'bold ':''}${isA?12:10}px monospace`;
-      ctx.fillStyle = pin.color;
-      ctx.shadowColor = 'rgba(0,0,0,.8)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(pin.d+'m', px+14, py+4);
-      ctx.shadowBlur = 0;
-
-      // Drag handle in shoot mode
-      if (S.shootMode) {
-        ctx.beginPath();
-        ctx.arc(px-14, py, 6, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(201,255,61,.5)';
-        ctx.fill();
-      }
+      ctx.font=`${isA?'bold ':''} ${isA?12:10}px monospace`;
+      ctx.fillStyle=col;
+      ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=4;
+      ctx.fillText(d+'m', px+13, py+4);
+      ctx.shadowBlur=0;
     });
   }
 
-  // Mini crosshair
-  const mc = document.getElementById('miniCanvas');
-  mc.width = mc.offsetWidth; mc.height = mc.offsetHeight;
-  const mctx = mc.getContext('2d');
-  mctx.clearRect(0, 0, mc.width, mc.height);
-  mctx.strokeStyle = 'rgba(201,255,61,.85)';
-  mctx.lineWidth = 1;
-  mctx.beginPath(); mctx.moveTo(0,mc.height/2); mctx.lineTo(mc.width,mc.height/2); mctx.stroke();
-  mctx.beginPath(); mctx.moveTo(mc.width/2,0);  mctx.lineTo(mc.width/2,mc.height); mctx.stroke();
+  drawMini();
 }
 
-// ── Sensors ────────────────────────────────────────────────────────────
+function drawHitMarkers(ctx, w, h) {
+  // Draw existing hits
+  calib.hits.forEach((hit, i) => {
+    const px = hit.x * w, py = hit.y * h;
+    ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2);
+    ctx.strokeStyle='#C9FF3D'; ctx.lineWidth=2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(px,py,2,0,Math.PI*2);
+    ctx.fillStyle='#C9FF3D'; ctx.fill();
+    ctx.font='bold 11px monospace'; ctx.fillStyle='#C9FF3D';
+    ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=5;
+    ctx.fillText(i+1, px+11, py-6);
+    ctx.shadowBlur=0;
+  });
+
+  // Draw median pin if >= 2 hits
+  if (calib.hits.length >= 2) {
+    const med = median(calib.hits);
+    const px = med.x * w, py = med.y * h;
+    ctx.beginPath(); ctx.arc(px,py,14,0,Math.PI*2);
+    ctx.strokeStyle='rgba(201,255,61,.6)'; ctx.lineWidth=1.5;
+    ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(201,255,61,.12)'; ctx.fill();
+  }
+}
+
+function drawMini() {
+  const mc = document.getElementById('miniCanvas');
+  mc.width=mc.offsetWidth; mc.height=mc.offsetHeight;
+  const mctx=mc.getContext('2d');
+  mctx.clearRect(0,0,mc.width,mc.height);
+  mctx.strokeStyle='rgba(201,255,61,.85)'; mctx.lineWidth=1;
+  mctx.beginPath(); mctx.moveTo(0,mc.height/2); mctx.lineTo(mc.width,mc.height/2); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(mc.width/2,0); mctx.lineTo(mc.width/2,mc.height); mctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALIBRATION
+// ═══════════════════════════════════════════════════════════════
+function openCalib() {
+  calib = { active:true, distance:null, hits:[], shooting:false };
+  renderCalibBody();
+  document.getElementById('calibOverlay').classList.add('open');
+}
+
+function closeCalib() {
+  // If shooting mode is active, end it first
+  endShooting(false);
+  calib = { active:false, distance:null, hits:[], shooting:false };
+  document.getElementById('calibOverlay').classList.remove('open');
+}
+
+function renderCalibBody() {
+  const body = document.getElementById('calibBody2');
+  const cal  = calib;
+
+  let html = `<div style="margin-bottom:14px">
+    <p style="color:rgba(255,255,255,.5);font-size:12px;font-family:sans-serif;margin-bottom:10px">
+      Wähle eine Distanz zum Einschießen:</p>
+    <div class="distGrid">`;
+
+  DISTANCES.forEach(d => {
+    const done = !!pinMap[d];
+    const active = cal.distance === d;
+    html += `<button class="distBtn ${done?'calibrated':''} ${active?'active':''}"
+      onclick="selectCalibDist(${d})">
+      ${d}m
+      <span class="dsub">${done?'✓ kalibriert':'nicht kalibriert'}</span>
+    </button>`;
+  });
+
+  html += `</div>`;
+
+  if (cal.distance !== null) {
+    const done = !!pinMap[cal.distance];
+    html += `<div style="background:#1e1e1e;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.08)">
+      <p style="color:#fff;font-size:13px;font-family:sans-serif;font-weight:600;margin-bottom:6px">
+        Distanz: <span style="color:${COLORS[cal.distance]}">${cal.distance} m</span>
+      </p>`;
+
+    if (!cal.shooting) {
+      html += `<p style="color:rgba(255,255,255,.55);font-size:12px;font-family:sans-serif;line-height:1.6;margin-bottom:12px">
+        ${done
+          ? `Bereits kalibriert. Du kannst neu einschießen um die Position zu aktualisieren.`
+          : `Richte den Bogen auf ein Ziel bei ${cal.distance} m.<br>Drücke dann "Einschießen starten".`
+        }</p>
+      <button class="calibBtn primary" onclick="startShooting()">
+        🎯 Einschießen starten (${cal.hits.length > 0 ? cal.hits.length + ' Treffer' : HIT_TARGET + ' Schüsse'})
+      </button>`;
+      if (done) {
+        html += `<button class="calibBtn danger" style="margin-top:6px" onclick="clearPin(${cal.distance})">
+          🗑 Pin löschen</button>`;
+      }
+    } else {
+      const n = cal.hits.length;
+      const pct = Math.round(n / HIT_TARGET * 100);
+      html += `
+      <div id="calibProgress"><div id="calibProgressBar" style="width:${pct}%"></div></div>
+      <p style="color:rgba(255,255,255,.6);font-size:12px;font-family:sans-serif;margin-bottom:8px">
+        Treffer: <span style="color:var(--accent);font-weight:700">${n} / ${HIT_TARGET}</span>
+        ${n > 0 ? '– Tippe weiter auf deine Trefferpositionen' : ''}
+      </p>
+      <div id="hitList">`;
+      cal.hits.forEach((h,i) => {
+        html += `<span class="hitBadge ${i===n-1?'last':''}">
+          #${i+1} (${(h.x*100).toFixed(0)}%, ${(h.y*100).toFixed(0)}%)
+        </span>`;
+      });
+      html += `</div>`;
+
+      if (n >= 2) {
+        html += `<button class="calibBtn primary" onclick="finalizeCalib()" style="margin-top:4px">
+          ✓ Pin setzen (${n} Treffer, Median)
+        </button>`;
+      } else {
+        html += `<button class="calibBtn primary" disabled>
+          ✓ Pin setzen (min. 2 Treffer nötig)
+        </button>`;
+      }
+      html += `<button class="calibBtn secondary" onclick="endShooting(false)" style="margin-top:6px">
+        Abbrechen</button>`;
+    }
+    html += `</div>`;
+  }
+
+  // Summary of all calibrated pins
+  const calibrated = DISTANCES.filter(d => pinMap[d]);
+  if (calibrated.length > 0) {
+    html += `<p style="color:rgba(255,255,255,.4);font-size:11px;font-family:sans-serif;margin-bottom:8px">Gespeicherte Pins:</p>`;
+    calibrated.forEach(d => {
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#1e1e1e;border-radius:10px;margin-bottom:5px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[d]};flex-shrink:0"></div>
+        <span style="color:#fff;font-size:13px;font-family:monospace;flex:1">${d} m</span>
+        <span style="color:rgba(255,255,255,.4);font-size:10px;font-family:monospace">
+          x:${(pinMap[d].x*100).toFixed(1)}% y:${(pinMap[d].y*100).toFixed(1)}%
+        </span>
+      </div>`;
+    });
+  }
+
+  html += `</div>`;
+  body.innerHTML = html;
+}
+
+function selectCalibDist(d) {
+  if (calib.shooting) endShooting(false);
+  calib.distance = d;
+  calib.hits = [];
+  renderCalibBody();
+}
+
+function startShooting() {
+  if (calib.distance === null) return;
+  calib.shooting = true;
+  calib.hits = [];
+  // Hide calib panel, show shoot overlay on camera
+  document.getElementById('calibOverlay').classList.remove('open');
+  document.getElementById('shootBanner').style.display = 'block';
+  document.getElementById('tapHint').style.display = 'block';
+  document.getElementById('shootBannerTitle').textContent =
+    'Einschießen: ' + calib.distance + ' m';
+  updateShootBanner();
+}
+
+function updateShootBanner() {
+  const n = calib.hits.length;
+  document.getElementById('hitCountDisplay').textContent = n + ' / ' + HIT_TARGET;
+  document.getElementById('shootBannerSub').textContent =
+    n < HIT_TARGET
+      ? 'Tippe auf deine Trefferposition im Bild'
+      : 'Genug Treffer! Gehe zurück zum Einschießen-Menü.';
+}
+
+function endShooting(save) {
+  calib.shooting = false;
+  document.getElementById('shootBanner').style.display  = 'none';
+  document.getElementById('tapHint').style.display      = 'none';
+}
+
+function finalizeCalib() {
+  if (calib.hits.length < 2) return;
+  const med = median(calib.hits);
+  pinMap[calib.distance] = { x: med.x, y: med.y };
+  savePins();
+
+  // Update active pin
+  S.activePin = calib.distance;
+  updateDistHud();
+
+  // Log
+  console.log(`[BogenScope] Pin gesetzt: ${calib.distance}m @ x:${med.x.toFixed(3)} y:${med.y.toFixed(3)} (${calib.hits.length} Treffer)`);
+
+  calib.hits = [];
+  calib.shooting = false;
+  renderCalibBody();
+  openCalib(); // re-open to show updated state
+}
+
+function clearPin(d) {
+  delete pinMap[d];
+  savePins();
+  if (S.activePin === d) {
+    S.activePin = DISTANCES.find(x => pinMap[x]) || null;
+    updateDistHud();
+  }
+  calib.hits = [];
+  renderCalibBody();
+}
+
+// Canvas tap = add hit during shooting
+function initCanvasTap() {
+  const c = document.getElementById('canvas');
+  c.style.pointerEvents = 'auto';
+
+  c.addEventListener('touchend', e => {
+    if (!calib.shooting) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    const rect = c.getBoundingClientRect();
+    const nx = (t.clientX - rect.left) / rect.width;
+    const ny = (t.clientY - rect.top)  / rect.height;
+
+    calib.hits.push({ x: nx, y: ny });
+    console.log(`[BogenScope] Treffer #${calib.hits.length}: x:${nx.toFixed(3)} y:${ny.toFixed(3)}`);
+    updateShootBanner();
+
+    // Auto-finalize at HIT_TARGET
+    if (calib.hits.length >= HIT_TARGET) {
+      setTimeout(() => {
+        endShooting(false);
+        finalizeCalib();
+        openCalib();
+      }, 600);
+    }
+  }, { passive:false });
+
+  // Click fallback for desktop testing
+  c.addEventListener('click', e => {
+    if (!calib.shooting) return;
+    const rect = c.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top)  / rect.height;
+    calib.hits.push({ x: nx, y: ny });
+    updateShootBanner();
+    if (calib.hits.length >= HIT_TARGET) {
+      setTimeout(() => { endShooting(false); finalizeCalib(); openCalib(); }, 600);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function median(pts) {
+  const xs = pts.map(p=>p.x).sort((a,b)=>a-b);
+  const ys = pts.map(p=>p.y).sort((a,b)=>a-b);
+  const m  = Math.floor(pts.length/2);
+  return { x: xs[m], y: ys[m] };
+}
+
+function updateDistHud() {
+  const el = document.getElementById('distVal');
+  const bx = document.getElementById('distBox');
+  if (S.activePin && pinMap[S.activePin]) {
+    el.textContent = S.activePin;
+    el.style.color = COLORS[S.activePin];
+    bx.style.borderColor = COLORS[S.activePin] + 'cc';
+  } else {
+    el.textContent = '–';
+    el.style.color = 'var(--accent)';
+    bx.style.borderColor = 'var(--border)';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SENSORS
+// ═══════════════════════════════════════════════════════════════
 function initSensors() {
   if (!window.DeviceMotionEvent) return;
   if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -475,135 +761,33 @@ function initSensors() {
     const acc = e.accelerationIncludingGravity;
     if (!acc) return;
     const raw = Math.atan2(acc.x, acc.z) * (180/Math.PI);
-    // Stärkerer Low-Pass: 95% alt, 5% neu – deutlich ruhiger
     smooth = smooth * 0.95 + raw * 0.05;
-    updateLevel(smooth);
+    S.tilt = smooth;
+    const ok  = Math.abs(smooth) < 3.0;
+    const col = ok ? '#3DDC84' : '#FFB000';
+    const frac = Math.max(-1, Math.min(1, smooth/15));
+    document.getElementById('levelBubble').style.left = (50 + frac*41.4) + '%';
+    document.getElementById('levelBubble').style.background = col;
+    const lv = document.getElementById('levelVal');
+    lv.textContent = (smooth>=0?'+':'') + smooth.toFixed(1) + '°';
+    lv.style.color = col;
   });
 }
 
-function updateLevel(deg) {
-  S.tilt = deg;
-  // Toleranz 3° statt 1.5°
-  const ok  = Math.abs(deg) < 3.0;
-  const col = ok ? '#3DDC84' : '#FFB000';
-  // Track ist 140px breit, Bubble kann ±58px wandern
-  const frac = Math.max(-1, Math.min(1, deg / 15));
-  const px   = 50 + frac * 41.4; // % of track width
-  const b = document.getElementById('levelBubble');
-  b.style.left = px + '%';
-  b.style.background = col;
-  const lv = document.getElementById('levelVal');
-  lv.textContent = (deg>=0?'+':'') + deg.toFixed(1) + '°';
-  lv.style.color = col;
-}
-
-// ── Pin Drag (vertikal verschieben) ────────────────────────────────────
-function initPinDrag() {
-  const canvas = document.getElementById('canvas');
-  let dragging = null;
-  let startY = 0;
-  let startOy = 0;
-
-  canvas.style.pointerEvents = 'auto';
-
-  canvas.addEventListener('touchstart', e => {
-    if (!S.pins) return;
-    if (e.touches.length !== 1) return;
-    const t = e.touches[0];
-    const c = canvas;
-    const cx = c.width / 2;
-    const cy = c.height * 0.42;
-
-    // Check if touch is near any pin
-    for (const pin of PINS) {
-      const oy = getPinOffset(pin.d, S.zoom);
-      const py = cy + oy * c.height;
-      const dx = Math.abs(t.clientX - cx);
-      const dy = Math.abs(t.clientY - py);
-      if (dx < 36 && dy < 28) {
-        // In shoot mode: save pin at this position
-        if (S.shootMode) {
-          S.shootingPin = pin.d;
-          return;
-        }
-        // In normal mode: drag to adjust
-        dragging = pin.d;
-        startY   = t.clientY;
-        startOy  = oy;
-        e.preventDefault();
-        return;
-      }
-    }
-  }, { passive:false });
-
-  canvas.addEventListener('touchmove', e => {
-    if (dragging === null) return;
-    if (e.touches.length !== 1) return;
-    e.preventDefault();
-    const dy = e.touches[0].clientY - startY;
-    const c  = canvas;
-    const newOy = startOy + dy / c.height;
-    setPinOffset(dragging, S.zoom, Math.max(-0.45, Math.min(0.45, newOy)));
-  }, { passive:false });
-
-  canvas.addEventListener('touchend', e => {
-    if (S.shootMode && S.shootingPin !== null) {
-      // Save current crosshair center as pin position for this zoom
-      // (pin snaps to center = 0 offset)
-      const t = e.changedTouches[0];
-      const c = canvas;
-      const cy = c.height * 0.42;
-      const oy = (t.clientY - cy) / c.height;
-      setPinOffset(S.shootingPin, S.zoom, Math.max(-0.45, Math.min(0.45, oy)));
-      showShootConfirm(S.shootingPin);
-      S.shootingPin = null;
-    }
-    dragging = null;
-  });
-}
-
-// ── Einschießen ────────────────────────────────────────────────────────
-function startShoot() {
-  S.shootMode = !S.shootMode;
-  const btn = document.getElementById('shootBtn');
-  const banner = document.getElementById('shootBanner');
-  if (S.shootMode) {
-    btn.style.background   = 'rgba(201,255,61,.35)';
-    btn.style.borderColor  = '#C9FF3D';
-    banner.style.display   = 'block';
-    document.getElementById('shootDist').textContent = S.activePin;
-  } else {
-    btn.style.background  = 'rgba(201,255,61,.15)';
-    banner.style.display  = 'none';
-    S.shootingPin = null;
-  }
-}
-
-function showShootConfirm(dist) {
-  const banner = document.getElementById('shootBanner');
-  banner.innerHTML = '<p style="color:var(--accent);font-size:15px;font-weight:700">✓ ' + dist + ' m gespeichert</p>';
-  banner.style.display = 'block';
-  setTimeout(() => {
-    banner.style.display = 'none';
-    banner.innerHTML = '<p>Ziele auf <span id="shootDist">' + S.activePin + '</span> m</p><p style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Tippe auf den Pin um zu speichern</p>';
-    S.shootMode = false;
-    document.getElementById('shootBtn').style.background = 'rgba(201,255,61,.15)';
-  }, 1500);
-}
-
-// ── Toggles ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// TOGGLES
+// ═══════════════════════════════════════════════════════════════
 function tog(key) {
   S[key] = !S[key];
   document.getElementById('tog-'+key).classList.toggle('on', S[key]);
-  if (key==='level') document.getElementById('levelWrap').style.display = S.level ? '' : 'none';
-  if (key==='mini')  document.getElementById('miniWrap').style.display  = S.mini  ? '' : 'none';
-  if (key==='dist')  document.getElementById('distHud').style.display   = S.dist  ? '' : 'none';
-  const el = document.getElementById('tog-'+key);
-  el.classList.add('pulse');
-  el.addEventListener('animationend', () => el.classList.remove('pulse'), {once:true});
+  if (key==='level') document.getElementById('levelWrap').style.display = S.level?'':'none';
+  if (key==='mini')  document.getElementById('miniWrap').style.display  = S.mini ?'':'none';
+  if (key==='dist')  document.getElementById('distHud').style.display   = S.dist ?'':'none';
 }
 
-// ── Sheets ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// SHEETS
+// ═══════════════════════════════════════════════════════════════
 function openSheet(type) {
   const c = document.getElementById('sheetContent');
   if (type === 'settings') {
@@ -612,31 +796,24 @@ function openSheet(type) {
       <h2>Overlays</h2>
       ${[['cross','Fadenkreuz'],['circle','Scope-Kreis'],['point','Zielpunkt'],
          ['pins','Distanz-Pins'],['level','Wasserwaage'],['mini','Miniaturansicht'],['dist','Entfernung']]
-        .map(([k,l]) => `
+        .map(([k,l])=>`
         <div class="sheetRow" onclick="tog('${k}');openSheet('settings')">
-          <span>${l}</span>
-          <div class="sw ${S[k]?'on':''}"></div>
+          <span>${l}</span><div class="sw ${S[k]?'on':''}"></div>
         </div>`).join('')}`;
-
   } else if (type === 'pins') {
     c.innerHTML = `
       <button class="sheetClose" onclick="closeSheet()">✕</button>
-      <h2>Distanz-Pins</h2>
-      <p class="sectionTitle">Tippe auf einen Pin um ihn aktiv zu schalten. Im Scope-Modus Pins vertikal ziehen um sie anzupassen (je Zoom-Stufe).</p>
-      ${PINS.map(p => {
-        const oy = getPinOffset(p.d, S.zoom);
-        const pxOy = (oy * 100).toFixed(1);
-        return `
-        <div class="pinRow ${p.d===S.activePin?'active':''}" id="pinrow-${p.d}">
-          <div class="pinDot" style="background:${p.color}"></div>
-          <span class="pinLabel">${p.d} m</span>
-          <span class="pinOffset">Offset: ${pxOy}%</span>
-          <button class="pinSelectBtn ${p.d===S.activePin?'act':''}" onclick="selectPin(${p.d})">
-            ${p.d===S.activePin?'AKTIV':'Wählen'}
-          </button>
+      <h2>Aktiver Pin</h2>
+      ${DISTANCES.map(d => {
+        const ok = !!pinMap[d];
+        return `<div class="pinRow ${S.activePin===d?'active':''}">
+          <div class="pinDot" style="background:${COLORS[d]}"></div>
+          <span class="pinLabel">${d} m</span>
+          <span class="pinState ${ok?'ok':'no'}">${ok?'✓ eingeschossen':'nicht eingeschossen'}</span>
+          ${ok ? `<button class="pinSelectBtn ${S.activePin===d?'act':''}" onclick="selectPin(${d})">
+            ${S.activePin===d?'AKTIV':'Wählen'}</button>` : ''}
         </div>`;
-      }).join('')}
-      <button class="addBtn">＋ Neue Distanz (kommt in Phase 4)</button>`;
+      }).join('')}`;
   }
   document.getElementById('sheet').classList.add('open');
 }
@@ -645,12 +822,7 @@ function closeSheet() { document.getElementById('sheet').classList.remove('open'
 
 function selectPin(d) {
   S.activePin = d;
-  const pin = PINS.find(p => p.d === d);
-  document.getElementById('distVal').textContent = d;
-  if (pin) {
-    document.getElementById('distVal').style.color = pin.color;
-    document.getElementById('distBox').style.borderColor = pin.color + 'cc';
-  }
+  updateDistHud();
   closeSheet();
 }
 </script>
